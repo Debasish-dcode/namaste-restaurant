@@ -1,22 +1,31 @@
-# Namaste Restaurant – React menu & ordering site
+# Namaste Restaurant – React Menu & Ordering Site
 
 ## Run in VS Code
-1. Install Node.js (https://nodejs.org), then open this folder in VS Code.
-2. Open the terminal (Ctrl+`) and run:
-   ```
+
+1. Install Node.js from https://nodejs.org and open this folder in VS Code.
+2. Open the terminal (`Ctrl + ``) and run:
+
+   ```bash
    npm install
    npm run dev
    ```
-3. Open the address shown (http://localhost:5173). The QR camera works on `localhost` and on `https`.
+
+3. Open the address shown in the terminal, usually http://localhost:5173.
+
+The QR camera works on `localhost` and on HTTPS.
 
 ## Photos
-- Put your own photos in `public/images/dishes/<dish-id>.jpg` (ids are in `src/data.js`, e.g. `paneer-tikka.jpg`)
-  and `public/images/restaurant.jpg` for the top picture.
-- Missing photos are looked up automatically on Wikimedia Commons (needs internet). Check each dish and replace any that look wrong.
 
-## Your details
-Edit `src/data.js` (name, phone, website, Instagram, WhatsApp, menu and prices).
+- Put your own photos in `public/images/dishes/<dish-id>.jpg`. Dish IDs are listed in `src/data.js`, for example `paneer-tikka.jpg`.
+- Add the restaurant's main photo at `public/images/restaurant.jpg`.
+- Missing photos are looked up automatically on Wikimedia Commons, which requires an internet connection. Check each dish photo and replace any incorrect images.
 
-## QR codes
-Make one QR code per table that contains a link like `https://yourdomain.com/?table=5` (opens the menu directly),
-or just the text `Table 5` (works with the in-app scanner).
+## Your Details
+
+Edit `src/data.js` to update the restaurant name, phone number, website, Instagram, WhatsApp, menu items, and prices.
+
+## QR Codes
+
+Create one QR code per table containing a link such as `https://yourdomain.com/?table=5` to open the menu directly.
+
+Alternatively, use the text `Table 5`, which works with the in-app scanner.
