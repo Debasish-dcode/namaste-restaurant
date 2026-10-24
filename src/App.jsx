@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { R, MENU, ALL } from "./data";
 import { tile, TINT } from "./vectors";
@@ -10,6 +9,7 @@ import Stars, { useRatings, stat } from "./components/Stars";
 import { Cart, Done, RateSheet } from "./components/Sheets";
 
 const rs = (n) => "₹" + Number(n).toFixed(2);
+
 const waNumber = (n) => {
   const d = String(n).replace(/\D/g, "");
   return d.length === 10 ? "91" + d : d;
@@ -17,17 +17,20 @@ const waNumber = (n) => {
 
 export default function App() {
   const urlTable = new URLSearchParams(location.search).get("table");
+
   const [screen, setScreen] = useState(urlTable ? "menu" : "scan");
   const [table, setTable] = useState(urlTable);
   const [mode, setMode] = useState("dine");
   const [cart, setCart] = useState({});
   const [sheet, setSheet] = useState(null);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
     address: "",
     note: "",
   });
+
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [order, setOrder] = useState(null);
@@ -43,23 +46,32 @@ export default function App() {
 
     const onScroll = () => {
       let cur = MENU[0].id;
+
       MENU.forEach((c) => {
         const el = document.getElementById(c.id);
-        if (el && el.getBoundingClientRect().top < 120) cur = c.id;
+
+        if (el && el.getBoundingClientRect().top < 120) {
+          cur = c.id;
+        }
       });
+
       setTab(cur);
     };
 
     addEventListener("scroll", onScroll, { passive: true });
+
     return () => removeEventListener("scroll", onScroll);
   }, [screen]);
 
-  const lines = ALL
-    .filter((d) => cart[d.id])
-    .map((d) => ({ ...d, q: cart[d.id] }));
+  const lines = ALL.filter((d) => cart[d.id]).map((d) => ({
+    ...d,
+    q: cart[d.id],
+  }));
 
   const count = lines.reduce((a, x) => a + x.q, 0);
+
   const sub = lines.reduce((a, x) => a + x.q * x.price, 0);
+
   const fee =
     mode === "delivery" && sub > 0 && sub < R.freeDeliveryAbove
       ? R.deliveryFee
@@ -75,8 +87,10 @@ export default function App() {
     setCart((c) => {
       const q = Math.max(0, (c[id] || 0) + d);
       const n = { ...c };
+
       if (q) n[id] = q;
       else delete n[id];
+
       return n;
     });
   };
@@ -91,15 +105,18 @@ export default function App() {
 
   const enterDelivery = () => {
     if (!store.get("namaste_scanned", false)) return false;
+
     setTable(null);
     setMode("delivery");
     setScreen("menu");
     window.scrollTo(0, 0);
+
     return true;
   };
 
   const placeOrder = async () => {
     if (isSubmitting) return;
+
     if (!lines.length) {
       setError("Please add an item to your order.");
       return;
@@ -134,7 +151,7 @@ export default function App() {
           .map((x) => `• ${x.name} x ${x.q} = ${rs(x.q * x.price)}`)
           .join("\n") +
         `\nDelivery: ${rs(fee)}\n*Total: ${rs(total)}*` +
-        (form.note ? `\nNote: ${form.note}` : "");
+        (form.note.trim() ? `\nNote: ${form.note.trim()}` : "");
 
       setOrder({
         id,
@@ -145,8 +162,10 @@ export default function App() {
           R.whatsapp
         )}&text=${encodeURIComponent(text)}`,
       });
+
       setCart({});
       setSheet("done");
+
       return;
     }
 
@@ -165,7 +184,9 @@ export default function App() {
     setIsSubmitting(true);
 
     try {
-      const { data: orderId, error: dbError } = await supabase.rpc(
+      // Submit the dine-in order.
+      // Supabase returns the order ID and database-calculated total.
+      const { data: result, error: dbError } = await supabase.rpc(
         "submit_dine_in_order",
         {
           p_table_number: tableNumber,
@@ -179,26 +200,27 @@ export default function App() {
 
       if (dbError) throw dbError;
 
-      if (typeof orderId !== "string" || !orderId) {
+      // Validate the response returned by the database.
+      if (
+        !result ||
+        typeof result.id !== "string" ||
+        !result.id
+      ) {
         throw new Error("The database did not return an order ID.");
       }
 
-      // Use the database-confirmed ID and database-calculated total.
-      // Read the saved total from the orders table.
-      const { data: savedOrder, error: readError } = await supabase
-        .from("orders")
-        .select("id, total")
-        .eq("id", orderId)
-        .single();
+      const orderId = result.id;
+      const total = Number(result.total);
 
-      if (readError) throw readError;
-
-      const total = Number(savedOrder.total);
-
-      if (!Number.isFinite(total)) {
+      if (
+        result.total === null ||
+        result.total === undefined ||
+        !Number.isFinite(total)
+      ) {
         throw new Error("Could not verify the saved order total.");
       }
 
+      // Prepare the restaurant's WhatsApp order message.
       const text =
         `*New dine-in order #${orderId}* - ${R.name}\n` +
         `Table: ${tableNumber}\n` +
@@ -208,6 +230,8 @@ export default function App() {
         `\n*Database total: ${rs(total)}*` +
         (form.note.trim() ? `\nNote: ${form.note.trim()}` : "");
 
+      // Show confirmation only after Supabase successfully returns
+      // the saved order ID and calculated total.
       setOrder({
         id: orderId,
         total,
@@ -222,8 +246,9 @@ export default function App() {
       setSheet("done");
     } catch (err) {
       console.error("Order submission failed:", err);
+
       setError(
-        "We couldn't verify your order. Your cart has been kept. Please try again or ask restaurant staff to check before retrying."
+        "We couldn't verify your order. Your cart has been kept. Please ask restaurant staff to check before retrying."
       );
     } finally {
       setIsSubmitting(false);
@@ -262,10 +287,13 @@ export default function App() {
             fallback="hero"
             alt="Namaste Restaurant"
           />
+
           <div className="hero-shade" />
+
           <div className="hero-body">
             <h1>{R.name}</h1>
             <p>{R.tagline}</p>
+
             <button className="rate-chip" onClick={() => setSheet("rate")}>
               ★ {rest.avg.toFixed(1)} ({rest.n}) ·{" "}
               {rest.mine ? `Your rating: ${rest.mine}` : "Rate us"}
@@ -277,6 +305,7 @@ export default function App() {
           <a href={`tel:${R.phone.replace(/\s/g, "")}`}>
             ☎ {R.phone}
           </a>
+
           <a href={R.website} target="_blank" rel="noopener noreferrer">
             {mode === "dine" && table
               ? `Dining at Table ${table}`
@@ -322,15 +351,20 @@ export default function App() {
                     query={d.q}
                     alt={d.name}
                   />
+
                   <div className="info">
                     <div className="name">
                       <span className={"dot" + (d.veg ? "" : " nv")} />
                       {d.name}
                     </div>
+
                     <div className="desc">{d.desc}</div>
+
                     <Stars id={d.id} ratings={ratings} onRate={rate} />
+
                     <div className="buy">
                       <span className="price">{rs(d.price)}</span>
+
                       {cart[d.id] ? (
                         <div className="qty">
                           <button
@@ -340,7 +374,9 @@ export default function App() {
                           >
                             −
                           </button>
+
                           <span>{cart[d.id]}</span>
+
                           <button
                             onClick={() => change(d.id, 1)}
                             aria-label="Add one"
