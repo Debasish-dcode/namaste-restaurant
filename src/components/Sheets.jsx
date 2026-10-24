@@ -1,6 +1,6 @@
 import { R } from "../data";
 
-const rs = (n) => "₹" + n;
+const rs = (n) => "₹" + Number(n).toFixed(2);
 function Sheet({ onClose, children }) {
   return (
     <div className="sheet" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -9,7 +9,21 @@ function Sheet({ onClose, children }) {
   );
 }
 
-export function Cart({ lines, mode, setMode, table, form, setForm, change, sub, fee, error, onPlace, onClose }) {
+export function Cart({
+  lines,
+  mode,
+  setMode,
+  table,
+  form,
+  setForm,
+  change,
+  sub,
+  fee,
+  error,
+  isSubmitting,
+  onPlace,
+  onClose,
+}) {
   const del = mode === "delivery";
   const field = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) });
   return (
@@ -39,7 +53,15 @@ export function Cart({ lines, mode, setMode, table, form, setForm, change, sub, 
       <div className="row big"><span>Total</span><span>{rs(sub + fee)}</span></div>
       <textarea rows="2" placeholder="Any request? e.g. less spicy" {...field("note")} />
       <div className="err">{error}</div>
-      <button className="primary" onClick={onPlace}>Place order</button>
+      
+<button
+  className="primary"
+  onClick={onPlace}
+  disabled={isSubmitting}
+>
+  {isSubmitting ? "Saving order..." : "Place order"}
+</button>
+
       <button className="link" onClick={onClose}>Keep browsing</button>
     </Sheet>
   );
