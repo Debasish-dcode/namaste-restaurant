@@ -1,4 +1,5 @@
 import { R } from "../data";
+import { useState } from "react";
 
 const rs = (n) => "₹" + Number(n).toFixed(2);
 function Sheet({ onClose, children }) {
@@ -12,6 +13,7 @@ function Sheet({ onClose, children }) {
 export function Cart({
   lines,
   mode,
+  startCheckout,
   setMode,
   table,
   form,
@@ -24,15 +26,12 @@ export function Cart({
   onPlace,
   onClose,
 }) {
+  const [isCheckout, setIsCheckout] = useState(startCheckout);
   const del = mode === "delivery";
   const field = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) });
   return (
     <Sheet onClose={onClose}>
       <h2>Your order</h2>
-      <div className="seg">
-        <button className={!del ? "on" : ""} disabled={!table} onClick={() => setMode("dine")}>🍽️ Dine-in{table ? ` (Table ${table})` : ""}</button>
-        <button className={del ? "on" : ""} onClick={() => setMode("delivery")}>🛵 Home delivery</button>
-      </div>
       {lines.map((x) => (
         <div className="row" key={x.id}>
           <div>{x.name}<br /><small>{rs(x.price)} each</small></div>
@@ -41,28 +40,30 @@ export function Cart({
         </div>
       ))}
       <div className="row"><span>Subtotal</span><span>{rs(sub)}</span></div>
-      {del && (
+      {isCheckout && (
         <>
-          <div className="row"><span>Delivery {fee ? "" : "(free)"}</span><span>{rs(fee)}</span></div>
-          <input placeholder="Your name" {...field("name")} />
-          <input type="tel" placeholder="Mobile number" {...field("phone")} />
-          <textarea rows="2" placeholder="Full delivery address" {...field("address")} />
-          <small>Free delivery above {rs(R.freeDeliveryAbove)}</small>
+          <div className="seg">
+            <button className={!del ? "on" : ""} disabled={!table} onClick={() => setMode("dine")}>🍽️ Dine-in{table ? ` (Table ${table})` : ""}</button>
+            <button className={del ? "on" : ""} onClick={() => setMode("delivery")}>🛵 Home delivery</button>
+          </div>
+          {del && (
+            <>
+              <div className="row"><span>Delivery {fee ? "" : "(free)"}</span><span>{rs(fee)}</span></div>
+              <input placeholder="Your name" {...field("name")} />
+              <input type="tel" placeholder="Mobile number" {...field("phone")} />
+              <textarea rows="2" placeholder="Full delivery address" {...field("address")} />
+              <small>Free delivery above {rs(R.freeDeliveryAbove)}</small>
+            </>
+          )}
+          <div className="row big"><span>Total</span><span>{rs(sub + fee)}</span></div>
+          <textarea rows="2" placeholder="Any request? e.g. less spicy" {...field("note")} />
+          <div className="err">{error}</div>
+          <button className="primary" onClick={onPlace} disabled={isSubmitting}>
+            {isSubmitting ? "Saving order..." : "Place order"}
+          </button>
+          <button className="link" onClick={onClose}>Cancel</button>
         </>
       )}
-      <div className="row big"><span>Total</span><span>{rs(sub + fee)}</span></div>
-      <textarea rows="2" placeholder="Any request? e.g. less spicy" {...field("note")} />
-      <div className="err">{error}</div>
-      
-<button
-  className="primary"
-  onClick={onPlace}
-  disabled={isSubmitting}
->
-  {isSubmitting ? "Saving order..." : "Place order"}
-</button>
-
-      <button className="link" onClick={onClose}>Keep browsing</button>
     </Sheet>
   );
 }
