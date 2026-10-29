@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { R, MENU, ALL } from "./data";
 import { tile, TINT } from "./vectors";
 import { store } from "./store";
-import { supabase } from "./supabase";
+import { supabase, supabaseConfigError } from "./supabase";
 import Scanner from "./components/Scanner";
 import Photo from "./components/Photo";
 import Stars, { useRatings, stat } from "./components/Stars";
@@ -20,12 +20,18 @@ const waNumber = (n) => {
 
 function RestaurantApp() {
   const urlTable = new URLSearchParams(location.search).get("table");
+  const savedTable = store.get("namaste_table", null);
+  const savedMode = store.get("namaste_mode", null);
+  const hasVisited = Boolean(urlTable || store.get("namaste_scanned", false));
 
-  const [screen, setScreen] = useState(urlTable ? "menu" : "scan");
-  const [table, setTable] = useState(urlTable);
-  const [mode, setMode] = useState("dine");
+  const [screen, setScreen] = useState(hasVisited ? "menu" : "scan");
+  const [table, setTable] = useState(urlTable || savedTable);
+  const [mode, setMode] = useState(
+    urlTable ? "dine" : savedMode === "delivery" ? "delivery" : "dine"
+  );
   const [cart, setCart] = useState({});
   const [sheet, setSheet] = useState(null);
+  const [startCheckout, setStartCheckout] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -41,7 +47,11 @@ function RestaurantApp() {
   const [ratings, rate] = useRatings();
 
   useEffect(() => {
-    if (urlTable) store.set("namaste_scanned", true);
+    if (urlTable) {
+      store.set("namaste_scanned", true);
+      store.set("namaste_table", urlTable);
+      store.set("namaste_mode", "dine");
+    }
   }, [urlTable]);
 
   useEffect(() => {
@@ -102,6 +112,8 @@ function RestaurantApp() {
     setTable(t);
     setMode("dine");
     store.set("namaste_scanned", true);
+    store.set("namaste_table", t);
+    store.set("namaste_mode", "dine");
     setScreen("menu");
     window.scrollTo(0, 0);
   };
@@ -111,6 +123,8 @@ function RestaurantApp() {
 
     setTable(null);
     setMode("delivery");
+    store.set("namaste_mode", "delivery");
+    store.set("namaste_table", null);
     setScreen("menu");
     window.scrollTo(0, 0);
 
@@ -187,6 +201,10 @@ function RestaurantApp() {
     setIsSubmitting(true);
 
     try {
+      if (!supabase) {
+        throw new Error(supabaseConfigError);
+      }
+
       // Submit the dine-in order.
       // Supabase returns the order ID and database-calculated total.
       const { data: result, error: dbError } = await supabase.rpc(
@@ -410,11 +428,32 @@ function RestaurantApp() {
 
       {count > 0 && (
         <div id="bar">
-          <button onClick={() => setSheet("cart")}>
+          <div className="view-order">
             <span>
               View order ({count} item{count > 1 ? "s" : ""})
             </span>
             <span>{rs(sub)}</span>
+          </div>
+          <button
+            className="continue-order"
+            onClick={() => {
+              setStartCheckout(true);
+              setSheet("cart");
+            }}
+          >
+            Continue
+          </button>
+          <button
+            className="cancel-order"
+            onClick={() => {
+              if (!isSubmitting) {
+                setCart({});
+                setSheet(null);
+              }
+            }}
+            disabled={isSubmitting}
+          >
+            Cancel
           </button>
         </div>
       )}
@@ -424,6 +463,7 @@ function RestaurantApp() {
           {...{
             lines,
             mode,
+            startCheckout,
             setMode,
             table,
             form,

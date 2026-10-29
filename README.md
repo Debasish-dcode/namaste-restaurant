@@ -14,6 +14,15 @@
 
 The QR camera works on `localhost` and on HTTPS.
 
+Before placing dine-in orders, create a `.env.local` file in the project root:
+
+```env
+VITE_SUPABASE_URL=your-supabase-project-url
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+```
+
+Restart the development server after changing environment variables.
+
 ## Photos
 
 - Put your own photos in `public/images/dishes/<dish-id>.jpg`. Dish IDs are listed in `src/data.js`, for example `paneer-tikka.jpg`.
