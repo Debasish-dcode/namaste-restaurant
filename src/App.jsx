@@ -1,3 +1,5 @@
+
+import Reception from "./Reception";
 import { useEffect, useState } from "react";
 import { R, MENU, ALL } from "./data";
 import { tile, TINT } from "./vectors";
@@ -8,6 +10,7 @@ import Photo from "./components/Photo";
 import Stars, { useRatings, stat } from "./components/Stars";
 import { Cart, Done, RateSheet } from "./components/Sheets";
 
+
 const rs = (n) => "₹" + Number(n).toFixed(2);
 
 const waNumber = (n) => {
@@ -15,7 +18,7 @@ const waNumber = (n) => {
   return d.length === 10 ? "91" + d : d;
 };
 
-export default function App() {
+function RestaurantApp() {
   const urlTable = new URLSearchParams(location.search).get("table");
 
   const [screen, setScreen] = useState(urlTable ? "menu" : "scan");
@@ -451,4 +454,9 @@ export default function App() {
       )}
     </>
   );
+}
+export default function App() {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  return path === "/reception" ? <Reception /> : <RestaurantApp />;
 }
