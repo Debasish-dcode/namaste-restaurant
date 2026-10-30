@@ -34,3 +34,4 @@ Change-log convention: Record every future code change here with its affected fi
 - `src/styles.css:21-32,368-375`: Moved fixed order-bar clearance from after the footer into the main content flow so the footer stays directly below the menu.
 - `src/styles.css:359-374`: Fixed narrow mobile card alignment by sizing the quantity control and image so the price remains fully visible inside the card.
 - `src/styles.css:346-350`: Increased the desktop menu card minimum width to prevent price and quantity controls from competing for space.
+- `src/App.jsx:158-166, 249-257`: Updated WhatsApp order messages to show “New Order”, order ID, restaurant name, table/delivery details, item prices, quantities, and total.

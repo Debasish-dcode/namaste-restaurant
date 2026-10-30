@@ -161,11 +161,11 @@ function RestaurantApp() {
       const total = sub + fee;
 
       const text =
-        `*New delivery order #${id}* - ${R.name}\n` +
+        `*New Order #${id} - ${R.name}*\n` +
         `Name: ${form.name}\nPhone: ${form.phone}\n` +
         `Address: ${form.address}\n` +
         lines
-          .map((x) => `• ${x.name} x ${x.q} = ${rs(x.q * x.price)}`)
+          .map((x) => `• ${x.name} - ${rs(x.price)} x ${x.q} = ${rs(x.q * x.price)}`)
           .join("\n") +
         `\nDelivery: ${rs(fee)}\n*Total: ${rs(total)}*` +
         (form.note.trim() ? `\nNote: ${form.note.trim()}` : "");
@@ -243,12 +243,12 @@ function RestaurantApp() {
 
       // Prepare the restaurant's WhatsApp order message.
       const text =
-        `*New dine-in order #${orderId}* - ${R.name}\n` +
-        `Table: ${tableNumber}\n` +
+        `*New Order #${orderId} - ${R.name}*\n` +
+        `Dining table: Table ${tableNumber}\n` +
         lines
-          .map((x) => `• ${x.name} x ${x.q} = ${rs(x.q * x.price)}`)
+          .map((x) => `• ${x.name} - ${rs(x.price)} x ${x.q} = ${rs(x.q * x.price)}`)
           .join("\n") +
-        `\n*Database total: ${rs(total)}*` +
+        `\n*Total: ${rs(total)}*` +
         (form.note.trim() ? `\nNote: ${form.note.trim()}` : "");
 
       // Show confirmation only after Supabase successfully returns
