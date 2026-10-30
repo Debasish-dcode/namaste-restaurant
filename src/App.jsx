@@ -1,6 +1,6 @@
 
 import Reception from "./Reception";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { R, MENU, ALL } from "./data";
 import { tile, TINT } from "./vectors";
 import { store } from "./store";
@@ -43,8 +43,72 @@ function RestaurantApp() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [order, setOrder] = useState(null);
-  const [tab, setTab] = useState(MENU[0].id);
+  const [tab, setTab] = useState("all");
   const [ratings, rate] = useRatings();
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [toast, setToast] = useState("");
+  const [barPulse, setBarPulse] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(query.trim().toLowerCase()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setIsScrolled(window.scrollY > 80);
+      setShowBackToTop(window.scrollY > 400);
+      setScrollProgress(max > 0 ? (window.scrollY / max) * 100 : 0);
+    };
+    onScroll();
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(""), 2000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (isLoading || screen !== "menu") return;
+    const cards = document.querySelectorAll(".reveal-card");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    cards.forEach((card, index) => {
+      card.style.setProperty("--reveal-delay", `${Math.min(index * 45, 320)}ms`);
+      observer.observe(card);
+    });
+    return () => observer.disconnect();
+  }, [isLoading, screen, search]);
+
+  const filteredMenu = useMemo(() => MENU.map((category) => ({
+    ...category,
+    items: category.items.filter((dish) => {
+      const matchesSearch = !search || `${dish.name} ${dish.desc}`.toLowerCase().includes(search);
+      return matchesSearch;
+    }),
+  })), [search]);
+  const visibleMenu = filteredMenu.filter((category) => tab === "all" || category.id === tab);
+  const filteredCount = visibleMenu.reduce((count, category) => count + category.items.length, 0);
 
   useEffect(() => {
     if (urlTable) {
@@ -54,28 +118,6 @@ function RestaurantApp() {
     }
   }, [urlTable]);
 
-  useEffect(() => {
-    if (screen !== "menu") return;
-
-    const onScroll = () => {
-      let cur = MENU[0].id;
-
-      MENU.forEach((c) => {
-        const el = document.getElementById(c.id);
-
-        if (el && el.getBoundingClientRect().top < 120) {
-          cur = c.id;
-        }
-      });
-
-      setTab(cur);
-    };
-
-    addEventListener("scroll", onScroll, { passive: true });
-
-    return () => removeEventListener("scroll", onScroll);
-  }, [screen]);
-
   const lines = ALL.filter((d) => cart[d.id]).map((d) => ({
     ...d,
     q: cart[d.id],
@@ -84,6 +126,13 @@ function RestaurantApp() {
   const count = lines.reduce((a, x) => a + x.q, 0);
 
   const sub = lines.reduce((a, x) => a + x.q * x.price, 0);
+
+  useEffect(() => {
+    if (!count) return;
+    setBarPulse(true);
+    const timer = setTimeout(() => setBarPulse(false), 450);
+    return () => clearTimeout(timer);
+  }, [count, sub]);
 
   const fee =
     mode === "delivery" && sub > 0 && sub < R.freeDeliveryAbove
@@ -106,6 +155,7 @@ function RestaurantApp() {
 
       return n;
     });
+    if (d > 0) setToast("Item added");
   };
 
   const enterDine = (t) => {
@@ -290,7 +340,8 @@ function RestaurantApp() {
 
   return (
     <>
-      <div className="page">
+    <div className="scroll-progress" style={{ width: `${scrollProgress}%` }} aria-hidden="true" />
+    <div className="page">
         <header className="hero">
           <Photo
             local="/images/restaurant.jpg"
@@ -312,31 +363,42 @@ function RestaurantApp() {
           </div>
         </header>
 
-        <div className="contact">
+        <div className={`contact ${isScrolled ? "scrolled" : ""}`}>
           <a href={`tel:${R.phone.replace(/\s/g, "")}`}>
             ☎ {R.phone}
           </a>
-
         </div>
 
-        <nav>
+        <div className="section-divider" aria-hidden="true">
+          <svg viewBox="0 0 1440 70" preserveAspectRatio="none">
+            <path d="M0 35C180 4 320 4 520 35s340 31 520 0 300-31 400 0v35H0Z" />
+          </svg>
+        </div>
+
+        <nav aria-label="Menu categories">
+          <button
+            className={tab === "all" ? "on" : ""}
+            onClick={() => setTab("all")}
+          >
+            All
+          </button>
           {MENU.map((c) => (
             <button
               key={c.id}
               className={tab === c.id ? "on" : ""}
-              onClick={() =>
-                document
-                  .getElementById(c.id)
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
+              onClick={() => setTab(c.id)}
             >
               {c.title}
             </button>
           ))}
         </nav>
 
+        <div className="menu-tools">
+          <div className="search-box"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search dishes, e.g. paneer" aria-label="Search dishes" />{query && <button aria-label="Clear search" onClick={() => setQuery("")}>×</button>}</div>
+        </div>
+
         <main>
-          {MENU.map((c) => (
+          {isLoading ? <div className="skeleton-grid">{Array.from({ length: 6 }, (_, index) => <div className="skeleton-card" key={index}><span /><div><i /><i /><b /></div></div>)}</div> : filteredCount === 0 ? <div className="empty-state">No dishes found for '{search}'<button onClick={() => setQuery("")}>Clear search</button></div> : visibleMenu.filter((category) => category.items.length).map((c) => (
             <section
               key={c.id}
               id={c.id}
@@ -351,16 +413,12 @@ function RestaurantApp() {
               </div>
 
               {c.items.map((d) => (
-                <article className="item" key={d.id}>
-                  <Photo
-                    local={`/images/dishes/${d.id}.jpg`}
-                    query={d.q}
-                    alt={d.name}
-                  />
+                <article className="item reveal-card" key={d.id}>
+                  <div className="dish-photo"><Photo local={`/images/dishes/${d.id}.jpg`} query={d.q} alt={d.name} />{d.badges?.slice(0, 2).map((badge) => <span className={`badge ${badge}`} key={badge}>{badge === "spicy" ? "🌶️ Spicy" : badge === "chef" ? "Chef's Special" : badge === "bestseller" ? "Bestseller" : "New"}</span>)}</div>
 
                   <div className="info">
                     <div className="name">
-                      <span className={"dot" + (d.veg ? "" : " nv")} />
+                      <span className={"dot" + ((d.isVeg ?? d.veg) ? "" : " nv")} />
                       {d.name}
                     </div>
 
@@ -375,7 +433,7 @@ function RestaurantApp() {
                         <div className="qty">
                           <button
                             onClick={() => change(d.id, -1)}
-                            aria-label="Remove one"
+                            aria-label={`Decrease quantity of ${d.name}`}
                             disabled={isSubmitting}
                           >
                             −
@@ -385,7 +443,7 @@ function RestaurantApp() {
 
                           <button
                             onClick={() => change(d.id, 1)}
-                            aria-label="Add one"
+                            aria-label={`Increase quantity of ${d.name}`}
                             disabled={isSubmitting}
                           >
                             +
@@ -408,11 +466,27 @@ function RestaurantApp() {
           ))}
         </main>
 
-        <footer>© Namaste Restaurant · Made with love ♥</footer>
+        <footer>
+          <div className="footer-grid">
+            <div>
+              <strong>{R.name}</strong>
+              <p>{R.tagline}</p>
+            </div>
+            <div>
+              <h3>Visit us</h3>
+              <p>Fresh Indian flavours, served daily.</p>
+            </div>
+            <div>
+              <h3>Contact</h3>
+              <a href={`tel:${R.phone.replace(/\s/g, "")}`}>☎ {R.phone}</a>
+            </div>
+          </div>
+          <small>© Namaste Restaurant · Made with love ♥</small>
+        </footer>
       </div>
 
       {count > 0 && (
-        <div id="bar">
+        <div id="bar" className={barPulse ? "pulse" : ""}>
           <div className="view-order">
             <span>
               View order ({count} item{count > 1 ? "s" : ""})
@@ -442,6 +516,9 @@ function RestaurantApp() {
           </button>
         </div>
       )}
+
+      {toast && <div className="toast" role="status">{toast}</div>}
+      {showBackToTop && <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top">↑</button>}
 
       {sheet === "cart" && (
         <Cart

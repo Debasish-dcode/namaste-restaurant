@@ -93,7 +93,6 @@ export function Done({ order, onClose }) {
         <h2>Order #{order.id} placed 🎉</h2>
         <p>{order.delivery ? "We will call you to confirm your delivery." : `Your food is being prepared for Table ${order.table}.`}</p>
         <p>Total to pay: <b>{rs(order.total)}</b></p>
-        <a className="wa" href={order.wa} target="_blank" rel="noopener noreferrer">Send order on WhatsApp</a>
         <button className="link" onClick={onClose}>Done</button>
       </div>
     </Sheet>
