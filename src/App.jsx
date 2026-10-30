@@ -290,16 +290,6 @@ function RestaurantApp() {
 
   return (
     <>
-      <div className="mosaic" aria-hidden="true">
-        {ALL.map((d) => (
-          <Photo
-            key={d.id}
-            local={`/images/dishes/${d.id}.jpg`}
-            query={d.q}
-          />
-        ))}
-      </div>
-
       <div className="page">
         <header className="hero">
           <Photo
@@ -327,11 +317,6 @@ function RestaurantApp() {
             ☎ {R.phone}
           </a>
 
-          <a href={R.website} target="_blank" rel="noopener noreferrer">
-            {mode === "dine" && table
-              ? `Dining at Table ${table}`
-              : "Home delivery"}
-          </a>
         </div>
 
         <nav>
