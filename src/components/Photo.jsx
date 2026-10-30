@@ -31,17 +31,23 @@ function commonsPhoto(query) {
 export default function Photo({ local, query, alt = "", fallback = "dish", ...rest }) {
   const [src, setSrc] = useState(local);
   const [stage, setStage] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   const fb = fallback === "hero" ? HERO_FB : DISH_FB;
 
   const onError = async () => {
     if (stage === 0) {
       setStage(1);
+      setLoaded(false);
       const found = await commonsPhoto(query);
       if (found) setSrc(found);
       else { setStage(2); setSrc(fb); }
     } else if (stage === 1) {
-      setStage(2); setSrc(fb);
+      setStage(2); setSrc(fb); setLoaded(false);
     }
   };
-  return <img src={src} alt={alt} onError={onError} loading="lazy" {...rest} />;
+  return (
+    <span className={"photo-wrap" + (loaded ? " ready" : "")}>
+      <img src={src} alt={alt} onError={onError} onLoad={() => setLoaded(true)} loading="lazy" {...rest} />
+    </span>
+  );
 }
