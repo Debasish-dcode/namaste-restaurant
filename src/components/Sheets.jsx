@@ -1,11 +1,29 @@
 import { R } from "../data";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const rs = (n) => "₹" + Number(n).toFixed(2);
 function Sheet({ onClose, children }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose]);
+
   return (
     <div className="sheet" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="panel">{children}</div>
+      <div className="panel" role="dialog" aria-modal="true">
+        {children}
+      </div>
     </div>
   );
 }
